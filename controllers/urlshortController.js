@@ -8,6 +8,7 @@ var itemsInDb;
 var urlencodedParser = bodyParser.urlencoded({extended: false});
 var dns = require('dns');
 const url = require('url');
+var validUrl = require('valid-url');
 
 // Connect to db
 mongoose.connect(process.env.MONGODB_URI+'',connectionOptions,(err)=>{
@@ -28,6 +29,10 @@ var shortUrl = mongoose.model('shortUrl', urlshortSchema);
 
 module.exports = function(app){
 
+    app.get('/', function(req, res){
+      res.redirect('/api/shorturl/new');
+        });
+
     app.get('/api/shorturl/new', function(req, res){
         res.render('index');
 
@@ -35,46 +40,47 @@ module.exports = function(app){
 
     app.post('/api/shorturl/new',urlencodedParser, function(req, res){
         var newUrl = url.parse(req.body.url);
+        if(validUrl.isUri(newUrl.href)){
+          console.log(req.body.url+': Valid');
+        dns.lookup(newUrl.hostname,function(err, address, familly){
+            console.log(newUrl+' ip: '+address);
+              if(address !== undefined){
+                  updateNumOfItems();
+                   console.log('Items in db: '+itemsInDb);
+
+                  shortUrl.findOne({url:newUrl.href},function(err, data){
+
+                    if(data === null){
+                  var newShortUrl = shortUrl({url:newUrl.href, urlShortened:itemsInDb+1})
+                  .save(function(err){
+                      if(err) throw err;
+                      res.json({Original_url:newUrl.href, short_url:itemsInDb+1});
+                      console.log(newUrl.href+' has been saved succesfully!')
+                  });
+
+              }
+              else if(data.url === newUrl.href){
+             console.log(data.url+' is already saved with new url: '+data.urlShortened);
+               res.json({Original_url:data.url, short_url:data.urlShortened});
+               }
+
+
+          });
+
+
+              } else{
+                  res.json({error:"invalid URL"});
+               }
+
+          });
+
+
+        }else{
+          console.log(req.body.url+': invalid');
+        }
         console.log(newUrl);
 
-        dns.lookup(newUrl.hostname,function(err, address, familly){
-          console.log(newUrl+' ip: '+address);
-            if(address !== undefined){
-                updateNumOfItems();
-                 console.log('Items in db: '+itemsInDb);
 
-                shortUrl.findOne({url:newUrl},function(err, data){
-
-                  if(data === null){
-                  if(newUrl.charAt(0)+newUrl.charAt(1)+newUrl.charAt(2) == 'www'){
-                    newUrl = 'http://'+newUrl;
-                    console.log('Url that had www : '+newUrl);
-                  }else{
-                    newUrl = 'http://www.'+newUrl;
-                    console.log('Url without www : '+newUrl);
-                  }
-                var newShortUrl = shortUrl({url:newUrl, urlShortened:itemsInDb+1})
-                .save(function(err){
-                    if(err) throw err;
-                    res.json({Original_url:newUrl, short_url:itemsInDb+1});
-                    console.log(newUrl+' has been saved succesfully!')
-                });
-
-            }
-            else if(data.url === newUrl){
-           console.log(data.url+' is already saved with new url: '+data.urlShortened);
-             res.json({Original_url:data.url, short_url:data.urlShortened});
-             }
-
-
-        });
-
-
-            } else{
-                res.json({error:"invalid URL"});
-             }
-
-        });
 
      });
 
