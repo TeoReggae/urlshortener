@@ -38,14 +38,15 @@ module.exports = function(app){
 
     });
 
-    app.post('/api/shorturl/new',urlencodedParser, function(req, res){
-        var newUrl = url.parse(req.body.url);
+    app.get('/api/shorturl/new/:url(*)',urlencodedParser, function(req, res){
+        updateNumOfItems();
+        var newUrl = url.parse(req.params.url);
         if(validUrl.isUri(newUrl.href)){
-          console.log(req.body.url+': Valid');
+          console.log(req.params.url+': Valid');
         dns.lookup(newUrl.hostname,function(err, address, familly){
             console.log(newUrl+' ip: '+address);
               if(address !== undefined){
-                  updateNumOfItems();
+
                    console.log('Items in db: '+itemsInDb);
 
                   shortUrl.findOne({url:newUrl.href},function(err, data){
@@ -77,6 +78,7 @@ module.exports = function(app){
 
         }else{
           console.log(req.body.url+': invalid');
+          res.json({error:"invalid URL"});
         }
         console.log(newUrl);
 
@@ -84,7 +86,7 @@ module.exports = function(app){
 
      });
 
-    app.get('/api/shorturl/new/:num', function(req, res){
+    app.get('/api/shorturl/:num', function(req, res){
         console.log(req.params.num);
         shortUrl.findOne({urlShortened:req.params.num},function(err, data){
             console.log('data: '+data);
