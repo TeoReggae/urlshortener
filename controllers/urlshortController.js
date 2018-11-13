@@ -5,6 +5,7 @@ var connectionOptions={
     useNewUrlParser: true
 };
 var itemsInDb;
+var shortUrl = require('../model');
 var urlencodedParser = bodyParser.urlencoded({extended: false});
 var dns = require('dns');
 const url = require('url');
@@ -19,13 +20,6 @@ mongoose.connect(process.env.MONGODB_URI+'',connectionOptions,(err)=>{
     }
 });
 
-// Create a Schema
-var urlshortSchema = new mongoose.Schema({
-    url:String,
-    urlShortened:String
-});
-
-var shortUrl = mongoose.model('shortUrl', urlshortSchema);
 
 module.exports = function(app){
 
