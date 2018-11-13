@@ -32,9 +32,11 @@ code {
   font-family: monospace;
   padding: 2px;
   color: black;
-  background-color: #fff;
+  background-color: lightgrey;
+  border-radius: 5px;
 }
 ol {
+  
 	list-style-position: inside;
 }
 ul {

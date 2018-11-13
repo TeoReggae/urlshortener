@@ -24,13 +24,10 @@ mongoose.connect(process.env.MONGODB_URI+'',connectionOptions,(err)=>{
 module.exports = function(app){
 
     app.get('/', function(req, res){
-      res.redirect('/api/shorturl/new');
+      res.render('index');
         });
 
-    app.get('/api/shorturl/new', function(req, res){
-        res.render('index');
 
-    });
 
     app.get('/api/shorturl/new/:url(*)',urlencodedParser, function(req, res){
         updateNumOfItems();
@@ -71,7 +68,7 @@ module.exports = function(app){
 
 
         }else{
-          console.log(req.body.url+': invalid');
+          console.log(req.params.url+': invalid');
           res.json({error:"invalid URL"});
         }
         console.log(newUrl);
@@ -80,6 +77,49 @@ module.exports = function(app){
 
      });
 
+    app.post('/api/shorturl/new',urlencodedParser, function(req, res){
+      updateNumOfItems();
+      var newUrl = url.parse(req.body.url);
+      if(validUrl.isUri(newUrl.href)){
+        console.log(req.body.url+': Valid');
+      dns.lookup(newUrl.hostname,function(err, address, familly){
+          console.log(newUrl.href+' ip: '+address);
+            if(address !== undefined){
+
+                 console.log('Items in db: '+itemsInDb);
+
+                shortUrl.findOne({url:newUrl.href},function(err, data){
+
+                  if(data === null){
+                var newShortUrl = shortUrl({url:newUrl.href, urlShortened:itemsInDb+1})
+                .save(function(err){
+                    if(err) throw err;
+                    res.json({Original_url:newUrl.href, short_url:itemsInDb+1});
+                    console.log(newUrl.href+' has been saved succesfully!')
+                });
+
+            }
+            else if(data.url === newUrl.href){
+           console.log(data.url+' is already saved with new url: '+data.urlShortened);
+             res.json({Original_url:data.url, short_url:data.urlShortened});
+             }
+
+
+        });
+
+
+            } else{
+                res.json({error:"invalid URL"});
+             }
+
+        });
+
+
+      }else{
+        console.log(req.body.url+': invalid');
+        res.json({error:"invalid URL"});
+      }
+    });
     app.get('/api/shorturl/:num', function(req, res){
         console.log(req.params.num);
         shortUrl.findOne({urlShortened:req.params.num},function(err, data){
